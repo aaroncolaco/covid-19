@@ -39,7 +39,7 @@ async function addUser(req, res) {
   }
 }
 
-async function getUserCount(res)
+async function getUserCount(req, res)
 {
     try{
       const count = await Service.getUserCount()
