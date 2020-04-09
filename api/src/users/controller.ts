@@ -39,16 +39,15 @@ async function addUser(req, res) {
   }
 }
 
-async function searchAllUsers()
+async function getUserCount(res)
 {
-    await Service.searchAllUsers().then(userCount => 
-                                    {
-                                      return userCount
-                                    })
-                                  .catch(error => {
-                                    logger.error(error)
-                                    return error
-                                  })
+    try{
+      const count = await Service.getUserCount()
+      return res.json({ count })
+    } catch(err) {
+      logger.error(`Error when fetchin user count: ${err.message}`)
+      return errorResponse(res, 'Something went wrong', 500)
+    }
 }
 
 
@@ -60,5 +59,5 @@ function errorResponse(res, message: string, status = 500) {
 
 export default {
   addUser,
-  searchAllUsers
+  getUserCount
 }
