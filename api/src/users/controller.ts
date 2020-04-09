@@ -39,11 +39,26 @@ async function addUser(req, res) {
   }
 }
 
+async function searchAllUsers()
+{
+    await Service.searchAllUsers().then(userCount => 
+                                    {
+                                      return userCount
+                                    })
+                                  .catch(error => {
+                                    logger.error(error)
+                                    return error
+                                  })
+}
+
+
+
 function errorResponse(res, message: string, status = 500) {
   return res.status(status).json({ message })
 }
 
 
 export default {
-  addUser
+  addUser,
+  searchAllUsers
 }
