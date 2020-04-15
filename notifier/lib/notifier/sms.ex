@@ -80,7 +80,8 @@ defmodule Notifier.SMS do
   defp build_sms_request(to, message, :twilio) do
     settings = Application.fetch_env!(:notifier, :twilio)
 
-    body = "Body=#{URI.encode(message)}"
+    # body = "Body=#{URI.encode(message)}"
+    body = "Body=#{message}"
     to = "&To=#{to}"
     from = "&From=#{settings[:from_number]}"
     data = body <> from <> to
