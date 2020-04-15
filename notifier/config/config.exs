@@ -44,9 +44,25 @@ config :notifier,
   db_url: "mongodb://localhost:27017/covid",
   # hour of the day to send at in UTC time
   notification_time: ~T[01:30:00],
-  sms_auth_key: "HELLO WORLD",
-  sms_url: "https://api.msg91.com/api/v2/sendsms",
+  sms_provider:
+    System.get_env()["SMS_PROVIDER"]
+    |> (fn
+          "msg91" -> :msg91
+          _ -> :twilio
+        end).(),
   state_map: state_map
+
+config :notifier, :msg91,
+  auth_key: "Secret Auth Key",
+  sender: "CORONA",
+  url: "https://api.msg91.com/api/v2/sendsms"
+
+config :notifier, :twilio,
+  auth_token: "Auth Token",
+  from_number: "+16123241660",
+  url:
+    "https://api.twilio.com/2010-04-01/Accounts/AC9d209debd6a303ceb6e7b4b8c2f48be6/Messages.json",
+  user_name: "Account ID"
 
 config :logger,
   compile_time_purge_matching: [

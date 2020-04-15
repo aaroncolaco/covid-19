@@ -3,17 +3,15 @@ defmodule Notifier.SMS do
   Logic to build and send sms based on passed in subscriber details
   """
 
-  @api Application.fetch_env!(:notifier, :sms_url)
-  @auth_key Application.fetch_env!(:notifier, :sms_auth_key)
+  @sms_provider Application.fetch_env!(:notifier, :sms_provider)
   @state_map Application.fetch_env!(:notifier, :state_map)
 
   require Logger
 
   def send_stat_sms(to, pin_code, state, country) do
-    message = build_sms(pin_code, state, country)
+    message = build_sms_text(pin_code, state, country)
 
-    # remove +91 from phone number
-    send_sms(String.slice(to, 3..13), message)
+    send_sms(to, message)
     |> handle_sms_response(to, message)
 
     :ok
@@ -23,17 +21,16 @@ defmodule Notifier.SMS do
     message = """
     Thank you for subscribing!
 
-    #{build_sms(pin_code, state, country)}
+    #{build_sms_text(pin_code, state, country)}
     """
 
-    # remove +91 from phone number
-    send_sms(String.slice(to, 3..13), message)
+    send_sms(to, message)
     |> handle_sms_response(to, message)
 
     :ok
   end
 
-  defp build_sms(pin, state, _country) do
+  defp build_sms_text(pin, state, _country) do
     {:ok, country_stats} = Notifier.StatsServer.get_stats_for_country()
     {:ok, district_stats} = Notifier.StatsServer.get_stats_for_district(pin)
     {:ok, state_stats} = Notifier.StatsServer.get_stats_for_state(state)
@@ -57,9 +54,14 @@ defmodule Notifier.SMS do
     """
   end
 
-  defp send_sms(to, message) do
+  defp build_sms_request(to, message, :msg91) do
+    settings = Application.fetch_env!(:notifier, :msg91)
+
+    # remove +91 from phone number
+    to = String.slice(to, 3..13)
+
     data = %{
-      sender: "CORONA",
+      sender: settings[:sender],
       route: "4",
       country: "IN",
       sms: [
@@ -70,13 +72,43 @@ defmodule Notifier.SMS do
       ]
     }
 
-    headers = [{"content-type", "application/json"}, {"authkey", @auth_key}]
-    HTTPoison.post(@api, Poison.encode!(data), headers)
+    headers = [{"content-type", "application/json"}, {"authkey", settings[:auth_key]}]
+    url = settings[:url]
+    {url, headers, Poison.encode!(data)}
+  end
+
+  defp build_sms_request(to, message, :twilio) do
+    settings = Application.fetch_env!(:notifier, :twilio)
+
+    body = "Body=#{URI.encode(message)}"
+    to = "&To=#{to}"
+    from = "&From=#{settings[:from_number]}"
+    data = body <> from <> to
+
+    headers = [
+      {"content-type", "application/x-www-form-urlencoded"},
+      {"authorization",
+       "Basic QUM5ZDIwOWRlYmQ2YTMwM2NlYjZlN2I0YjhjMmY0OGJlNjplOTFkY2U1MzlhOTkxODZhODhkYTZkM2M4ZDE2MGQyOA=="},
+      {"user-agent", "curl/7.64.1"},
+      {"accept", "*/*"}
+    ]
+
+    url = settings[:url]
+    {url, headers, data}
+  end
+
+  defp send_sms(to, message) do
+    {url, headers, data} = build_sms_request(to, message, @sms_provider)
+    HTTPoison.post(url, data, headers)
   end
 
   defp handle_sms_response(response, to, message) do
     case response do
       {:ok, %HTTPoison.Response{status_code: 200}} ->
+        Logger.info("#{to} - #{message}")
+        :ok
+
+      {:ok, %HTTPoison.Response{status_code: 201}} ->
         Logger.info("#{to} - #{message}")
         :ok
 
