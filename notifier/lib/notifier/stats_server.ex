@@ -5,6 +5,8 @@ defmodule Notifier.StatsServer do
 
   use GenServer
 
+  require Logger
+
   @initial_state %{
     are_stats_good: false,
     country_stats: %{},
@@ -82,6 +84,8 @@ defmodule Notifier.StatsServer do
   # Generate all the stats needed
   @impl true
   def handle_info(:load, data) do
+    Logger.info("Loading stats")
+
     # mark state as bad so do not use
     data = Map.put(data, :are_stats_good, false)
 
