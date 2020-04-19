@@ -1,12 +1,13 @@
 import Config
 
 config :notifier,
-  admin_secret: System.get_env["NOTIFIER_SECRET"]
+  admin_secret: System.get_env()["NOTIFIER_SECRET"],
+  data_refresh_interval: 1000 * 60 * 10
 
 config :notifier, :msg91,
-  auth_key: System.get_env["MSG91_AUTH_TOKEN"]
+  auth_key: System.get_env()["MSG91_AUTH_TOKEN"],
   sender: "CORONA"
 
 config :notifier, :twilio,
-  auth_token: System.get_env["TWILIO_AUTH_TOKEN"]
-  user_name: System.get_env["TWILIO_USER_NAME"]
+  auth_token: System.get_env()["TWILIO_AUTH_TOKEN"],
+  user_name: System.get_env()["TWILIO_USER_NAME"]
