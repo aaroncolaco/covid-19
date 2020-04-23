@@ -41,11 +41,35 @@ async function sendWelcomeSms(to: string, pincode: string, state: string, countr
   return true
 }
 
+async function unsubscribeUser(phoneNumber: string) {
+
+  User.findOne({ phone: phoneNumber }, (err, user) => { // first check if user exists. Just a precautionary measure
+    if (err) {
+        logger.error(`An error occured while looking for the user: ${err} `)
+  } else if (user == null) {
+        logger.info(`This user ${phoneNumber} is already unsubscribed`)
+    } else if (user != null) { // if user exists
+     User.update({phone: phoneNumber}, {$set: {subscribed: false}},
+      (error, result) => { // set allows to change the values of only the required field(s).
+          if (!error && result) {
+            const message = `You have been unsubscribed. We're sad to see you go`
+            logger.info(`${phoneNumber} has been unsubscribed.`)
+            return true
+          } else if (error) {
+            logger.info(`An error occured while unsubscribing ${phoneNumber}: ${error}`)
+            return false
+          }
+        })
+    }
+  })
+}
+
 
 const Service = {
   addUser,
   getUserCount,
-  sendWelcomeSms
+  sendWelcomeSms,
+  unsubscribeUser
 }
 
 export default Service
